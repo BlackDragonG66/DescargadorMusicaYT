@@ -2,11 +2,7 @@
 """
 Descargador de Música desde YouTube
 """
-
-def main():
-    print("Descargador de Música de YouTube")
-    print("================================")
-    # Aquí irá la lógica principal
+from gui import main
 
 if __name__ == "__main__":
     main()
