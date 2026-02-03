@@ -69,12 +69,13 @@ class AudioPlayer:
         try:
             import pygame
             from pathlib import Path
+            import glob
             
             # Crear directorio temporal si no existe
             Path('temp').mkdir(exist_ok=True)
             
             # Limpiar archivos temporales previos
-            temp_files = list(Path('temp').glob('preview_audio.*'))
+            temp_files = list(Path('temp').glob('preview_audio*'))
             for f in temp_files:
                 try:
                     f.unlink()
@@ -83,25 +84,35 @@ class AudioPlayer:
             
             # Descargar el audio en PEOR CALIDAD (más rápido para preview)
             ydl_opts = {
-                'format': 'worst',  # Peor calidad = descarga más rápido
-                'quiet': True,
-                'no_warnings': True,
+                'format': 'worstaudio/worst',  # Audio de peor calidad
+                'quiet': False,  # No silenciar para ver qué pasa
+                'no_warnings': False,
                 'socket_timeout': 30,
-                'outtmpl': str(Path('temp/preview_audio')),
+                'outtmpl': 'temp/preview_audio',
             }
             
             print("Descargando preview...")
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(url, download=True)
-                # Encontrar el archivo descargado
                 ext = info.get('ext', 'webm')
-                temp_file = Path(f'temp/preview_audio.{ext}')
+                print(f"Extensión detectada: {ext}")
                 
-                if not temp_file.exists():
+                # Buscar el archivo descargado
+                temp_file = None
+                temp_folder = Path('temp')
+                
+                # Buscar archivos que comiencen con preview_audio
+                for file in temp_folder.glob('preview_audio*'):
+                    if file.is_file():
+                        temp_file = file
+                        print(f"Archivo encontrado: {temp_file}")
+                        break
+                
+                if not temp_file or not temp_file.exists():
+                    print(f"Error: No se encontró archivo en temp. Archivos presentes: {list(temp_folder.glob('*'))}")
                     raise Exception("No se pudo descargar el audio temporal")
                 
-                print(f"Preview descargado: {temp_file}")
-                
+                print(f"Cargando: {temp_file}")
                 # Cargar y reproducir el archivo local
                 pygame.mixer.music.load(str(temp_file))
                 pygame.mixer.music.play()
