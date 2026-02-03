@@ -69,7 +69,7 @@ class AudioPlayer:
         try:
             import pygame
             from pathlib import Path
-            import glob
+            import subprocess
             
             # Crear directorio temporal si no existe
             Path('temp').mkdir(exist_ok=True)
@@ -112,6 +112,25 @@ class AudioPlayer:
                     print(f"Error: No se encontró archivo en temp. Archivos presentes: {list(temp_folder.glob('*'))}")
                     raise Exception("No se pudo descargar el audio temporal")
                 
+                # Convertir a WAV si no es formato compatible
+                wav_file = temp_folder / 'preview_audio.wav'
+                if temp_file.suffix.lower() not in ['.wav', '.mp3', '.ogg']:
+                    print(f"Convirtiendo {temp_file.suffix} a WAV...")
+                    try:
+                        # Usar ffmpeg para convertir
+                        cmd = ['ffmpeg', '-i', str(temp_file), '-q:a', '9', '-y', str(wav_file)]
+                        result = subprocess.run(cmd, capture_output=True, timeout=30)
+                        if result.returncode != 0:
+                            print(f"Error en conversión: {result.stderr.decode()}")
+                        
+                        if wav_file.exists():
+                            temp_file.unlink()  # Eliminar original
+                            temp_file = wav_file
+                            print(f"Conversión completada: {wav_file}")
+                    except Exception as e:
+                        print(f"Error convirtiendo: {e}")
+                        # Continuar con el archivo original
+                
                 print(f"Cargando: {temp_file}")
                 # Cargar y reproducir el archivo local
                 pygame.mixer.music.load(str(temp_file))
@@ -128,12 +147,19 @@ class AudioPlayer:
                 pygame.mixer.music.stop()
                 print("Reproducción completada")
                 
-                # Eliminar archivo temporal
+                # Eliminar archivos temporales
                 try:
                     temp_file.unlink()
                     print("Archivo temporal eliminado")
                 except Exception as e:
                     print(f"No se pudo eliminar archivo temporal: {e}")
+                
+                # Eliminar wav si existe
+                try:
+                    if wav_file.exists():
+                        wav_file.unlink()
+                except:
+                    pass
                 
                 self.is_playing = False
         except Exception as e:
