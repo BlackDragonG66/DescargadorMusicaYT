@@ -33,6 +33,16 @@ class MusicDownloaderGUI:
         main_frame = ttk.Frame(self.root, padding="10")
         main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
         
+        # Configurar pesos para que los elementos se expandan
+        self.root.columnconfigure(0, weight=1)
+        self.root.rowconfigure(0, weight=1)
+        main_frame.columnconfigure(0, weight=1)
+        main_frame.columnconfigure(1, weight=1)
+        main_frame.columnconfigure(2, weight=1)
+        main_frame.columnconfigure(3, weight=1)
+        main_frame.rowconfigure(2, weight=2)  # Resultados
+        main_frame.rowconfigure(3, weight=2)  # Info
+        
         # Título
         title = ttk.Label(main_frame, text="🎵 Descargador de Música YouTube", 
                          font=('Arial', 14, 'bold'))
@@ -53,13 +63,14 @@ class MusicDownloaderGUI:
         # Frame de resultados
         results_frame = ttk.LabelFrame(main_frame, text="Resultados", padding="10")
         results_frame.grid(row=2, column=0, columnspan=4, sticky=(tk.W, tk.E, tk.N, tk.S), pady=10)
-        results_frame.grid_rowconfigure(0, weight=1)
+        results_frame.columnconfigure(0, weight=1)
+        results_frame.rowconfigure(0, weight=1)
         
         # Listbox con scrollbar
         scrollbar = ttk.Scrollbar(results_frame)
         scrollbar.grid(row=0, column=1, sticky=(tk.N, tk.S))
         
-        self.results_listbox = tk.Listbox(results_frame, yscrollcommand=scrollbar.set, height=6)
+        self.results_listbox = tk.Listbox(results_frame, yscrollcommand=scrollbar.set, height=10)
         self.results_listbox.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
         self.results_listbox.bind('<<ListboxSelect>>', self.on_result_select)
         scrollbar.config(command=self.results_listbox.yview)
@@ -67,9 +78,11 @@ class MusicDownloaderGUI:
         # Frame de información del resultado seleccionado
         info_frame = ttk.LabelFrame(main_frame, text="Información del Video", padding="10")
         info_frame.grid(row=3, column=0, columnspan=4, sticky=(tk.W, tk.E, tk.N, tk.S), pady=10)
+        info_frame.columnconfigure(0, weight=1)
+        info_frame.rowconfigure(0, weight=1)
         
-        self.info_text = scrolledtext.ScrolledText(info_frame, height=4, width=80)
-        self.info_text.grid(row=0, column=0, columnspan=3, sticky=(tk.W, tk.E, tk.N, tk.S))
+        self.info_text = scrolledtext.ScrolledText(info_frame, height=10, width=80)
+        self.info_text.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
         
         # Frame de controles de reproducción
         player_frame = ttk.LabelFrame(main_frame, text="Reproducción", padding="10")

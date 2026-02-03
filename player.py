@@ -69,20 +69,17 @@ class AudioPlayer:
         try:
             import pygame
             from pathlib import Path
-            import tempfile
             
             # Crear directorio temporal si no existe
             Path('temp').mkdir(exist_ok=True)
             
-            # Descargar el audio a un archivo temporal
-            temp_file = Path('temp/preview_audio.webm')
-            
+            # Descargar el audio en PEOR CALIDAD (más rápido para preview)
             ydl_opts = {
-                'format': 'bestaudio',
+                'format': 'worst',  # Peor calidad = descarga más rápido
                 'quiet': True,
                 'no_warnings': True,
                 'socket_timeout': 30,
-                'outtmpl': str(temp_file.with_name('preview_audio')),
+                'outtmpl': str(Path('temp/preview_audio')),
             }
             
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
