@@ -4,7 +4,7 @@ Módulo de descarga de música desde YouTube
 import yt_dlp
 import csv
 from pathlib import Path
-from config import YTDLP_CONFIG, DOWNLOADS_DIR
+from config import YTDLP_CONFIG, DOWNLOADS_DIR, FFMPEG_PATH
 
 
 class YouTubeDownloader:
@@ -55,6 +55,10 @@ class YouTubeDownloader:
             opts = self.ydl_opts.copy()
             if output_path:
                 opts['outtmpl'] = str(Path(output_path) / '%(title)s.%(ext)s')
+            
+            # Verificar FFmpeg
+            if not FFMPEG_PATH:
+                raise Exception("FFmpeg no está instalado. Por favor instálalo desde https://ffmpeg.org/download.html")
             
             with yt_dlp.YoutubeDL(opts) as ydl:
                 info = ydl.extract_info(url, download=True)
