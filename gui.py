@@ -84,9 +84,6 @@ class MusicDownloaderGUI:
         self.volume_slider.set(70)
         self.volume_slider.pack(side=tk.LEFT, padx=5)
         
-        self.volume_label = ttk.Label(player_frame, text="70%", width=4)
-        self.volume_label.pack(side=tk.LEFT, padx=5)
-        
         self.player_status = ttk.Label(player_frame, text="Listo", foreground="green")
         self.player_status.pack(side=tk.RIGHT, padx=5)
         
@@ -224,7 +221,6 @@ URL: {info['url']}"""
     def set_volume(self, value):
         """Establece el volumen"""
         vol = int(float(value))
-        self.volume_label.config(text=f"{vol}%")
         self.player.set_volume(vol / 100.0)
     
     def update_player_status(self, message, color="black"):
