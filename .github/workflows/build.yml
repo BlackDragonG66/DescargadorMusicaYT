@@ -1,0 +1,67 @@
+name: Build Executable
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+    
+    - name: Build executable
+      run: |
+        pyinstaller build.spec
+    
+    - name: Create Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        body: |
+          ## Descargador de Música de YouTube
+          
+          Descarga música desde YouTube en MP3.
+          
+          ### Incluido:
+          - ✓ Interfaz gráfica
+          - ✓ Preview de canciones
+          - ✓ Descarga en MP3
+          - ✓ Soporte CSV/TXT
+          
+          ### Requisitos:
+          - Windows 10/11
+          - FFmpeg instalado (winget install FFmpeg)
+          
+          ### Uso:
+          1. Descarga `DescargadorMusicaYT.exe`
+          2. Instala FFmpeg si no lo tienes
+          3. ¡Ejecuta y disfruta!
+        draft: false
+        prerelease: false
+    
+    - name: Upload executable
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./dist/DescargadorMusicaYT.exe
+        asset_name: DescargadorMusicaYT.exe
+        asset_content_type: application/octet-stream

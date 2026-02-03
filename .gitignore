@@ -13,10 +13,24 @@ env/
 .idea/
 *.swp
 *.swo
+*.sublime-workspace
 
 # Downloads
 downloads/
 music/
+descargas/
+
+# Build and dist
+build/
+dist/
+*.egg-info/
+*.egg
+
+# Temporary files
+temp/
+*.tmp
+*.log
+*.spec.old
 
 # System
 .DS_Store
@@ -25,3 +39,8 @@ Thumbs.db
 # Environment variables
 .env
 .env.local
+
+# PyInstaller
+*.manifest
+*.spec
+
