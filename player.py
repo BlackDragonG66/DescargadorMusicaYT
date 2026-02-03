@@ -73,6 +73,14 @@ class AudioPlayer:
             # Crear directorio temporal si no existe
             Path('temp').mkdir(exist_ok=True)
             
+            # Limpiar archivos temporales previos
+            temp_files = list(Path('temp').glob('preview_audio.*'))
+            for f in temp_files:
+                try:
+                    f.unlink()
+                except:
+                    pass
+            
             # Descargar el audio en PEOR CALIDAD (más rápido para preview)
             ydl_opts = {
                 'format': 'worst',  # Peor calidad = descarga más rápido
@@ -82,6 +90,7 @@ class AudioPlayer:
                 'outtmpl': str(Path('temp/preview_audio')),
             }
             
+            print("Descargando preview...")
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(url, download=True)
                 # Encontrar el archivo descargado
@@ -91,9 +100,12 @@ class AudioPlayer:
                 if not temp_file.exists():
                     raise Exception("No se pudo descargar el audio temporal")
                 
+                print(f"Preview descargado: {temp_file}")
+                
                 # Cargar y reproducir el archivo local
                 pygame.mixer.music.load(str(temp_file))
                 pygame.mixer.music.play()
+                print("Reproduciendo...")
                 
                 # Reproducir durante duration_limit segundos
                 elapsed = 0
@@ -103,16 +115,20 @@ class AudioPlayer:
                     time.sleep(0.1)
                 
                 pygame.mixer.music.stop()
+                print("Reproducción completada")
                 
                 # Eliminar archivo temporal
                 try:
                     temp_file.unlink()
-                except:
-                    pass
+                    print("Archivo temporal eliminado")
+                except Exception as e:
+                    print(f"No se pudo eliminar archivo temporal: {e}")
                 
                 self.is_playing = False
         except Exception as e:
             print(f"Error con pygame: {e}")
+            import traceback
+            traceback.print_exc()
             self.is_playing = False
     
     def _play_with_ffmpeg(self, url, duration_limit):

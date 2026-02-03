@@ -88,9 +88,14 @@ class MusicDownloaderGUI:
         player_frame = ttk.LabelFrame(main_frame, text="Reproducción", padding="10")
         player_frame.grid(row=4, column=0, columnspan=4, sticky=(tk.W, tk.E), pady=10)
         
-        ttk.Button(player_frame, text="▶ Play (30s)", command=self.play_preview, width=15).pack(side=tk.LEFT, padx=5)
-        ttk.Button(player_frame, text="⏸ Pausa", command=self.pause_player, width=15).pack(side=tk.LEFT, padx=5)
-        ttk.Button(player_frame, text="⏹ Detener", command=self.stop_player, width=15).pack(side=tk.LEFT, padx=5)
+        self.play_btn = ttk.Button(player_frame, text="▶ Play (30s)", command=self.play_preview, width=15)
+        self.play_btn.pack(side=tk.LEFT, padx=5)
+        
+        self.pause_btn = ttk.Button(player_frame, text="⏸ Pausa", command=self.pause_player, width=15, state=tk.DISABLED)
+        self.pause_btn.pack(side=tk.LEFT, padx=5)
+        
+        self.stop_btn = ttk.Button(player_frame, text="⏹ Detener", command=self.stop_player, width=15, state=tk.DISABLED)
+        self.stop_btn.pack(side=tk.LEFT, padx=5)
         
         ttk.Label(player_frame, text="Volumen:").pack(side=tk.LEFT, padx=5)
         self.volume_slider = ttk.Scale(player_frame, from_=0, to=100, orient=tk.HORIZONTAL, 
@@ -203,16 +208,30 @@ URL: {info['url']}"""
             messagebox.showwarning("Advertencia", "Selecciona un resultado primero")
             return
         
-        self.update_player_status("Descargando preview...", "blue")
-        self.player_status.config(foreground="blue")
+        # Deshabilitar botones
+        self.play_btn.config(state=tk.DISABLED)
+        self.pause_btn.config(state=tk.DISABLED)
+        self.stop_btn.config(state=tk.DISABLED)
+        
+        self.update_player_status("Cargando preview...", "blue")
         
         def play_thread():
             try:
                 self.player.play_preview(self.selected_result['url'], duration_limit=30)
+                
+                # Habilitar botones después de que se cargue
+                self.play_btn.config(state=tk.NORMAL)
+                self.pause_btn.config(state=tk.NORMAL)
+                self.stop_btn.config(state=tk.NORMAL)
+                
                 self.update_player_status("Reproduciendo...", "green")
             except Exception as e:
                 messagebox.showerror("Error", f"Error reproduciendo: {str(e)}")
                 self.update_player_status("Error", "red")
+                # Re-habilitar botones aunque falle
+                self.play_btn.config(state=tk.NORMAL)
+                self.pause_btn.config(state=tk.NORMAL)
+                self.stop_btn.config(state=tk.NORMAL)
         
         thread = threading.Thread(target=play_thread, daemon=True)
         thread.start()
@@ -231,6 +250,9 @@ URL: {info['url']}"""
         """Detiene la reproducción"""
         self.player.stop()
         self.update_player_status("Detenido", "red")
+        self.play_btn.config(state=tk.NORMAL)
+        self.pause_btn.config(state=tk.DISABLED)
+        self.stop_btn.config(state=tk.DISABLED)
     
     def set_volume(self, value):
         """Establece el volumen"""
