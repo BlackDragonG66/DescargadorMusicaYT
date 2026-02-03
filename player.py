@@ -37,6 +37,7 @@ class AudioPlayer:
         Returns:
             bool: True si se inició la reproducción
         """
+        # Limpiar previamente si hay algo en reproducción
         if self.is_playing:
             self.stop()
         
@@ -66,26 +67,26 @@ class AudioPlayer:
     
     def _play_with_pygame(self, url, duration_limit):
         """Reproduce usando pygame.mixer"""
+        temp_file = None
+        wav_file = None
+        
         try:
             import pygame
             from pathlib import Path
             import subprocess
+            import time
             
             # Crear directorio temporal si no existe
             Path('temp').mkdir(exist_ok=True)
             
             # Limpiar archivos temporales previos
-            temp_files = list(Path('temp').glob('preview_audio*'))
-            for f in temp_files:
-                try:
-                    f.unlink()
-                except:
-                    pass
+            self._cleanup_temp_files()
+            time.sleep(0.2)  # Esperar a que se liberen
             
             # Descargar el audio en PEOR CALIDAD (más rápido para preview)
             ydl_opts = {
                 'format': 'worstaudio/worst',  # Audio de peor calidad
-                'quiet': False,  # No silenciar para ver qué pasa
+                'quiet': False,
                 'no_warnings': False,
                 'socket_timeout': 30,
                 'outtmpl': 'temp/preview_audio',
@@ -98,8 +99,8 @@ class AudioPlayer:
                 print(f"Extensión detectada: {ext}")
                 
                 # Buscar el archivo descargado
-                temp_file = None
                 temp_folder = Path('temp')
+                temp_file = None
                 
                 # Buscar archivos que comiencen con preview_audio
                 for file in temp_folder.glob('preview_audio*'):
@@ -109,7 +110,7 @@ class AudioPlayer:
                         break
                 
                 if not temp_file or not temp_file.exists():
-                    print(f"Error: No se encontró archivo en temp. Archivos presentes: {list(temp_folder.glob('*'))}")
+                    print(f"Error: No se encontró archivo en temp. Archivos: {list(temp_folder.glob('*'))}")
                     raise Exception("No se pudo descargar el audio temporal")
                 
                 # Convertir a WAV si no es formato compatible
@@ -124,7 +125,10 @@ class AudioPlayer:
                             print(f"Error en conversión: {result.stderr.decode()}")
                         
                         if wav_file.exists():
-                            temp_file.unlink()  # Eliminar original
+                            try:
+                                temp_file.unlink()  # Eliminar original
+                            except:
+                                pass
                             temp_file = wav_file
                             print(f"Conversión completada: {wav_file}")
                     except Exception as e:
@@ -132,41 +136,65 @@ class AudioPlayer:
                         # Continuar con el archivo original
                 
                 print(f"Cargando: {temp_file}")
-                # Cargar y reproducir el archivo local
-                pygame.mixer.music.load(str(temp_file))
-                pygame.mixer.music.play()
-                print("Reproduciendo...")
                 
-                # Reproducir durante duration_limit segundos
-                elapsed = 0
-                while self.is_playing and elapsed < duration_limit:
-                    if not self.is_paused:
-                        elapsed += 0.1
-                    time.sleep(0.1)
+                # Cargar y reproducir
+                try:
+                    pygame.mixer.music.load(str(temp_file))
+                    pygame.mixer.music.play()
+                    print("Reproduciendo...")
+                    
+                    # Reproducir durante duration_limit segundos
+                    elapsed = 0
+                    while self.is_playing and elapsed < duration_limit:
+                        if not self.is_paused:
+                            elapsed += 0.1
+                        time.sleep(0.1)
+                except pygame.error as e:
+                    print(f"Error pygame: {e}")
+                    raise
+                finally:
+                    # Asegurar que se detiene
+                    try:
+                        pygame.mixer.music.stop()
+                        pygame.mixer.music.unload()
+                    except:
+                        pass
                 
-                pygame.mixer.music.stop()
                 print("Reproducción completada")
                 
-                # Eliminar archivos temporales
-                try:
-                    temp_file.unlink()
-                    print("Archivo temporal eliminado")
-                except Exception as e:
-                    print(f"No se pudo eliminar archivo temporal: {e}")
-                
-                # Eliminar wav si existe
-                try:
-                    if wav_file.exists():
-                        wav_file.unlink()
-                except:
-                    pass
-                
-                self.is_playing = False
         except Exception as e:
             print(f"Error con pygame: {e}")
             import traceback
             traceback.print_exc()
+        finally:
             self.is_playing = False
+            
+            # Limpiar archivos con reintentos
+            if temp_file and temp_file.exists():
+                for attempt in range(5):
+                    try:
+                        temp_file.unlink()
+                        print(f"Archivo temporal eliminado: {temp_file}")
+                        break
+                    except PermissionError:
+                        print(f"Archivo en uso, reintentando... ({attempt+1}/5)")
+                        time.sleep(0.3)
+                    except Exception as e:
+                        print(f"Error eliminando {temp_file}: {e}")
+                        break
+            
+            if wav_file and wav_file.exists():
+                for attempt in range(5):
+                    try:
+                        wav_file.unlink()
+                        print(f"Archivo WAV eliminado: {wav_file}")
+                        break
+                    except PermissionError:
+                        print(f"Archivo WAV en uso, reintentando... ({attempt+1}/5)")
+                        time.sleep(0.3)
+                    except Exception as e:
+                        print(f"Error eliminando {wav_file}: {e}")
+                        break
     
     def _play_with_ffmpeg(self, url, duration_limit):
         """Reproducción alternativa con FFmpeg (solo descarga pequeña)"""
@@ -229,6 +257,7 @@ class AudioPlayer:
             try:
                 import pygame
                 pygame.mixer.music.stop()
+                pygame.mixer.music.unload()  # Descargar para liberar archivo
             except:
                 pass
         
@@ -238,6 +267,9 @@ class AudioPlayer:
                 self.current_process = None
             except:
                 pass
+        
+        # Limpiar archivos temporales
+        self._cleanup_temp_files()
     
     def set_volume(self, volume):
         """
@@ -253,3 +285,34 @@ class AudioPlayer:
                 pygame.mixer.music.set_volume(volume)
             except:
                 pass
+    
+    def _cleanup_temp_files(self):
+        """Limpia archivos temporales de forma segura"""
+        from pathlib import Path
+        import time
+        
+        temp_folder = Path('temp')
+        if not temp_folder.exists():
+            return
+        
+        # Archivos a limpiar
+        patterns = ['preview_audio*']
+        
+        for pattern in patterns:
+            for file in temp_folder.glob(pattern):
+                if file.is_file():
+                    try:
+                        # Esperar a que se libere el archivo
+                        for attempt in range(5):
+                            try:
+                                file.unlink()
+                                print(f"Archivo temporal eliminado: {file}")
+                                break
+                            except PermissionError:
+                                print(f"Archivo en uso, reintentando... ({attempt+1}/5)")
+                                time.sleep(0.5)
+                            except Exception as e:
+                                print(f"Error eliminando {file}: {e}")
+                                break
+                    except Exception as e:
+                        print(f"No se pudo limpiar {file}: {e}")
