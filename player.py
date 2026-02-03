@@ -68,24 +68,34 @@ class AudioPlayer:
         """Reproduce usando pygame.mixer"""
         try:
             import pygame
+            from pathlib import Path
+            import tempfile
             
-            # Obtener el stream de audio
+            # Crear directorio temporal si no existe
+            Path('temp').mkdir(exist_ok=True)
+            
+            # Descargar el audio a un archivo temporal
+            temp_file = Path('temp/preview_audio.webm')
+            
             ydl_opts = {
                 'format': 'bestaudio',
                 'quiet': True,
                 'no_warnings': True,
                 'socket_timeout': 30,
+                'outtmpl': str(temp_file.with_name('preview_audio')),
             }
             
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                info = ydl.extract_info(url, download=False)
-                audio_url = info.get('url')
+                info = ydl.extract_info(url, download=True)
+                # Encontrar el archivo descargado
+                ext = info.get('ext', 'webm')
+                temp_file = Path(f'temp/preview_audio.{ext}')
                 
-                if not audio_url:
-                    raise Exception("No se pudo obtener el stream de audio")
+                if not temp_file.exists():
+                    raise Exception("No se pudo descargar el audio temporal")
                 
-                # Reproducir directamente desde la URL
-                pygame.mixer.music.load(audio_url)
+                # Cargar y reproducir el archivo local
+                pygame.mixer.music.load(str(temp_file))
                 pygame.mixer.music.play()
                 
                 # Reproducir durante duration_limit segundos
@@ -95,7 +105,15 @@ class AudioPlayer:
                         elapsed += 0.1
                     time.sleep(0.1)
                 
-                self.stop()
+                pygame.mixer.music.stop()
+                
+                # Eliminar archivo temporal
+                try:
+                    temp_file.unlink()
+                except:
+                    pass
+                
+                self.is_playing = False
         except Exception as e:
             print(f"Error con pygame: {e}")
             self.is_playing = False

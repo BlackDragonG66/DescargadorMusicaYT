@@ -53,12 +53,13 @@ class MusicDownloaderGUI:
         # Frame de resultados
         results_frame = ttk.LabelFrame(main_frame, text="Resultados", padding="10")
         results_frame.grid(row=2, column=0, columnspan=4, sticky=(tk.W, tk.E, tk.N, tk.S), pady=10)
+        results_frame.grid_rowconfigure(0, weight=1)
         
         # Listbox con scrollbar
         scrollbar = ttk.Scrollbar(results_frame)
         scrollbar.grid(row=0, column=1, sticky=(tk.N, tk.S))
         
-        self.results_listbox = tk.Listbox(results_frame, yscrollcommand=scrollbar.set, height=8)
+        self.results_listbox = tk.Listbox(results_frame, yscrollcommand=scrollbar.set, height=6)
         self.results_listbox.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
         self.results_listbox.bind('<<ListboxSelect>>', self.on_result_select)
         scrollbar.config(command=self.results_listbox.yview)
