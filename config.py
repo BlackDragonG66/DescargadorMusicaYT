@@ -14,8 +14,29 @@ TEMP_DIR = BASE_DIR / "temp"
 DOWNLOADS_DIR.mkdir(exist_ok=True)
 TEMP_DIR.mkdir(exist_ok=True)
 
-# Verificar FFmpeg
-FFMPEG_PATH = shutil.which('ffmpeg')
+# Buscar FFmpeg en rutas comunes de Windows
+def find_ffmpeg():
+    """Busca FFmpeg en rutas comunes"""
+    common_paths = [
+        r"C:\Program Files\ffmpeg\bin\ffmpeg.exe",
+        r"C:\Program Files (x86)\ffmpeg\bin\ffmpeg.exe",
+        r"C:\ffmpeg\bin\ffmpeg.exe",
+        os.path.expandvars(r"%PROGRAMFILES%\ffmpeg\bin\ffmpeg.exe"),
+    ]
+    
+    # Primero intentar con shutil.which
+    ffmpeg = shutil.which('ffmpeg')
+    if ffmpeg:
+        return ffmpeg
+    
+    # Si no, buscar en rutas comunes
+    for path in common_paths:
+        if Path(path).exists():
+            return path
+    
+    return None
+
+FFMPEG_PATH = find_ffmpeg()
 FFPROBE_PATH = shutil.which('ffprobe')
 
 if not FFMPEG_PATH:
